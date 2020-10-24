@@ -1,0 +1,7 @@
+name: MMOCoreBoosters
+author: Fatalmoment
+version: 1.0-SNAPSHOT
+main: com.motherland.booster.MMOCoreBoosters
+depend: [PlaceholderAPI,MMOCore,LuckPerms]
+commands:
+  mmocoreb:

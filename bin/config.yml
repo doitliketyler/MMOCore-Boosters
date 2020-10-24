@@ -1,0 +1,23 @@
+messages:
+  invalid-cmd: "&8&lMMOCore&r &6&lBoosters &7&l>> &ainvalid command arguments!"
+  reload: "&8&lMMOCore&r &6&lBoosters &7&l>> &asuccessfully reloaded!"
+  perm-add: "&8&lMMOCore&r &6&lBoosters &7&l>> &asuccessfully added booster!"
+  boost-add: "&8&lMMOCore&r &6&lBoosters &7&l>> &asuccessfully given a booster!"
+mmocoreb:
+-  "&7-----------&8&lMMOCore&r &6&lBoosters&7-----------"
+-  "&e&l/mmocoreb reload &7&l>> &freloads the plugin!"
+-  "&e&l/mmocoreb give <player> <class/profess> <%> <time> &7&l>> &fgives players a timed booster!"
+-  "&e&l/mmocoreb give <player> <class/profess> <%> &7&l>> &fgives players a permanent booster!"
+booster:
+  mat: "emerald"
+  name: "&8&lMMOCore&r &6&lBooster"
+  lore:
+  - " "
+  -  "&6&lProfess/Class%"
+  -  "&8&l[%type%%]"
+  -  " "
+  -  "&6&lTime"
+  -  "&8&l[%time%]m"
+  - " "
+  -  "&6&lBooster%"
+  -  "&8&l[%percent%%]"
