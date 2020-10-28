@@ -2,10 +2,11 @@ package com.motherland.booster;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -44,6 +45,12 @@ public class CustomItem {
 	    loreList.add(color(lore));
 	}
 	meta.setLore(loreList);
+	return this;
+    }
+
+    public CustomItem addGlow() {
+	meta.addEnchant(Enchantment.OXYGEN, 1, false);
+	meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
 	return this;
     }
 
