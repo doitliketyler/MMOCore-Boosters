@@ -4,11 +4,11 @@ import net.luckperms.api.node.Node;
 
 public class Booster {
     private long time;
-    private int percent;
+    private double percent;
     private String type;
     private Node node;
 
-    public Booster(String type, long time, int percent, Node node) {
+    public Booster(String type, long time, double percent, Node node) {
 	this.time = time;
 	this.percent = percent;
 	this.type = type;
@@ -19,7 +19,7 @@ public class Booster {
 	return time;
     }
 
-    public int getPercent() {
+    public double getPercent() {
 	return percent;
     }
 

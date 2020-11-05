@@ -46,12 +46,14 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
     private LuckPerms api;
     private ItemStack item;
     private EventSubscription<NodeRemoveEvent> sub;
+    private Boolean debug;
 
     public void onEnable() {
 	Bukkit.getPluginManager().registerEvents(this, this);
 	this.getCommand("mmocoreb").setExecutor(this);
 	this.saveDefaultConfig();
 	help = this.getConfig().getStringList("mmocoreb");
+	debug = this.getConfig().getBoolean("debug");
 	MMOCore.plugin.classManager.getAll().forEach(clas -> {
 	    classes.put(clas.getId().toLowerCase(), clas.getId());
 	    types.add(clas.getId().toLowerCase());
@@ -72,7 +74,7 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 	    sub = eventBus.subscribe(NodeRemoveEvent.class, this::expire);
 	}
     }
-    
+
     public void onDisable() {
 	sub.close();
     }
@@ -86,16 +88,16 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 		if (profess.containsKey(split[2]) && !type.equalsIgnoreCase("class")) {
 		    if (s.hasExpiry()) {
 			boost.add(new Booster(split[2], s.getExpiryDuration().getSeconds() / 60l,
-				Integer.valueOf(split[3]), s));
+				Double.valueOf(split[3] + (split.length == 5 ? ("." + split[4]) : ".0")), s));
 		    } else {
-			boost.add(new Booster(split[2], -1l, Integer.valueOf(split[3]), s));
+			boost.add(new Booster(split[2], -1l, Double.valueOf(split[3] + (split.length == 5 ? ("." + split[4]) : ".0")), s));
 		    }
 		} else if (classes.containsKey(split[2]) && !type.equalsIgnoreCase("profess")) {
 		    if (s.hasExpiry()) {
 			boost.add(new Booster(split[2], s.getExpiryDuration().getSeconds() / 60l,
-				Integer.valueOf(split[3]), s));
+				Double.valueOf(split[3] + (split.length == 5 ? ("." + split[4]) : ".0")), s));
 		    } else {
-			boost.add(new Booster(split[2], -1l, Integer.valueOf(split[3]), s));
+			boost.add(new Booster(split[2], -1l, Double.valueOf(split[3] + (split.length == 5 ? ("." + split[4]) : ".0")), s));
 		    }
 		}
 	    }
@@ -133,7 +135,7 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 	return sb.toString().trim();
     }
 
-    public ItemMeta updateLore(Player p, ItemStack item, int time, int percent, String type) {
+    public ItemMeta updateLore(Player p, ItemStack item, int time, double percent, String type) {
 	List<String> lore = item.getItemMeta().getLore();
 	List<String> update = new ArrayList<>();
 	for (String s : lore) {
@@ -146,7 +148,7 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 	String name = this.getConfig().getString("booster.name");
 	meta.setDisplayName(PlaceholderAPI.setPlaceholders(p, name));
 	meta.getPersistentDataContainer().set(NamespacedKey.minecraft("booster"), PersistentDataType.STRING,
-		type + "," + time + "," + percent);
+		type + "," + time + "," + (percent + ""));
 	meta.setLore(update);
 	return meta;
     }
@@ -169,7 +171,17 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 			} else {
 			    log(sender, msgs.get("invalid-perms"));
 			}
+		    } else if (args[0].equalsIgnoreCase("debug")) {
+			if (sender.hasPermission("mmocoreboosters.admin")) {
+			    this.debug = this.debug ? false : true;
+			    this.getConfig().set("debug", debug);
+			    this.saveConfig();
+			    log(sender, msgs.get("debug"));
+			} else {
+			    log(sender, msgs.get("invalid-perms"));
+			}
 		    } else if (args[0].equalsIgnoreCase("boosters")) {
+			log(sender, msgs.get("boost-list-header"));
 			for (Booster b : getBoosters((Player) sender, "all")) {
 			    log(sender,
 				    msgs.get("boost-list").replaceAll("%type%", toTitleCase(b.getType()))
@@ -177,7 +189,7 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 						    ? Math.max(b.getNode().getExpiryDuration().getSeconds() / 60L, 1)
 							    + ""
 						    : "permanent")
-					    .replaceAll("%percent%", b.getPercent() + ""));
+					    .replaceAll("%percent%", (b.getPercent() + "").replaceAll("\\.0", "")));
 			}
 		    } else {
 			log(sender, msgs.get("invalid-cmd"));
@@ -186,28 +198,47 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 		    if (args[0].equalsIgnoreCase("give")) {
 			if (sender.hasPermission("mmocoreboosters.admin")) {
 			    if (Bukkit.getPlayer(args[1]) != null) {
-				if (classes.containsKey(args[2].toLowerCase())) {
-				    if (args[3].chars().allMatch(Character::isDigit)) {
+				if (types.contains(args[2].toLowerCase())) {
+				    try {
+					Double.parseDouble(args[3]);
 					api.getUserManager().getUser(Bukkit.getPlayer(args[1]).getUniqueId()).data()
-						.add(Node.builder(
-							"mmocoreboosters.xp." + args[2].toLowerCase() + "." + args[3])
-							.build());
+						.add(Node.builder("mmocoreboosters.xp." + args[2].toLowerCase() + "."
+							+ args[3]).build());
 					api.getUserManager().saveUser(
 						api.getUserManager().getUser(Bukkit.getPlayer(args[1]).getUniqueId()));
 					log(sender, msgs.get("perm-add"));
-				    } else {
+				    } catch (Exception e) {
 					log(sender, msgs.get("invalid-cmd"));
 				    }
-				} else if (profess.containsKey(args[2].toLowerCase())) {
-				    if (args[3].chars().allMatch(Character::isDigit)) {
-					api.getUserManager().getUser(Bukkit.getPlayer(args[1]).getUniqueId()).data()
-						.add(Node.builder(
-							"mmocoreboosters.xp." + args[2].toLowerCase() + "." + args[3])
-							.build());
-					api.getUserManager().saveUser(
-						api.getUserManager().getUser(Bukkit.getPlayer(args[1]).getUniqueId()));
-					log(sender, msgs.get("perm-add"));
-				    } else {
+				} else {
+				    log(sender, msgs.get("invalid-cmd"));
+				}
+			    } else {
+				log(sender, msgs.get("invalid-cmd"));
+			    }
+			} else {
+			    log(sender, msgs.get("invalid-perms"));
+			}
+		    } else if (args[0].equalsIgnoreCase("remove")) {
+			if (sender.hasPermission("mmocoreboosters.admin")) {
+			    if (Bukkit.getPlayer(args[1]) != null) {
+				if (types.contains(args[2].toLowerCase())) {
+				    try {
+					for (Booster b : getBoosters(Bukkit.getPlayer(args[1]), "all")) {
+					    Double.parseDouble(args[3]);
+					    if (b.getNode() == Node.builder("mmocoreboosters.xp."
+						    + args[2].toLowerCase() + "." + args[3])
+						    .build()) {
+						api.getUserManager().getUser(Bukkit.getPlayer(args[1]).getUniqueId())
+							.data().remove(b.getNode());
+						api.getUserManager().saveUser(api.getUserManager()
+							.getUser(Bukkit.getPlayer(args[1]).getUniqueId()));
+						log(sender, msgs.get("perm-add"));
+						return true;
+					    }
+					}
+					log(sender, msgs.get("invalid-boost"));
+				    } catch (Exception e) {
 					log(sender, msgs.get("invalid-cmd"));
 				    }
 				} else {
@@ -226,33 +257,18 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 		    if (args[0].equalsIgnoreCase("give")) {
 			if (sender.hasPermission("mmocoreboosters.admin")) {
 			    if (Bukkit.getPlayer(args[1]) != null) {
-				if (classes.containsKey(args[2].toLowerCase())) {
-				    if (args[3].chars().allMatch(Character::isDigit)) {
+				if (types.contains(args[2].toLowerCase())) {
+				    try {
 					if (args[4].chars().allMatch(Character::isDigit)) {
 					    ItemStack give = item.clone();
 					    give.setItemMeta(updateLore(p, give, Integer.valueOf(args[4]),
-						    Integer.valueOf(args[3]), args[2].toLowerCase()));
-
+						    Double.parseDouble(args[3]), args[2].toLowerCase()));
 					    Bukkit.getPlayer(args[1]).getInventory().addItem(give);
 					    log(sender, msgs.get("boost-add"));
 					} else {
 					    log(sender, msgs.get("invalid-cmd"));
 					}
-				    } else {
-					log(sender, msgs.get("invalid-cmd"));
-				    }
-				} else if (profess.containsKey(args[2].toLowerCase())) {
-				    if (args[3].chars().allMatch(Character::isDigit)) {
-					if (args[4].chars().allMatch(Character::isDigit)) {
-					    ItemStack give = item.clone();
-					    give.setItemMeta(updateLore(p, give, Integer.valueOf(args[4]),
-						    Integer.valueOf(args[3]), args[2].toLowerCase()));
-					    Bukkit.getPlayer(args[1]).getInventory().addItem(give);
-					    log(sender, msgs.get("boost-add"));
-					} else {
-					    log(sender, msgs.get("invalid-cmd"));
-					}
-				    } else {
+				    } catch (Exception e) {
 					log(sender, msgs.get("invalid-cmd"));
 				    }
 				} else {
@@ -272,14 +288,15 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 	return true;
     }
 
-    @EventHandler
     public void expire(NodeRemoveEvent e) {
-	System.out.println("testexpiry");
 	if (e.getNode().hasExpiry() && e.getNode().getExpiry().isBefore(Instant.now())) {
 	    if (e.getNode().getKey().contains("mmocoreboosters.xp")) {
 		String[] split = e.getNode().getKey().split("\\.");
-		log(Bukkit.getPlayer(e.getTarget().getFriendlyName()),
-			msgs.get("boost-expire").replaceAll("%percent%", split[3]).replaceAll("%type%", split[2]));
+		log(Bukkit.getPlayer(e.getTarget().getFriendlyName()), msgs.get("boost-expire")
+			.replaceAll("%percent%", (split[3] + (split.length == 5 ? ("." + split[4]) : ".0"))).replaceAll("%type%", split[2]));
+		if (debug)
+		    System.out.println(e.getTarget().getFriendlyName() + "'s x" +(split[3] + (split.length == 5 ? ("." + split[4]) : ".0"))
+			    + split[2] + " booster has expired!");
 	    }
 	}
     }
@@ -293,11 +310,12 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 	}
 	if (e.getBuffer().toLowerCase().contains("/mmocoreb ")) {
 	    if (e.getSender().hasPermission("mmocoreboosters.admin")) {
-		List<String> complete = Arrays.asList("give", "reload", "boosters");
+		List<String> complete = Arrays.asList("give", "remove", "reload", "boosters", "debug");
 		e.setCompletions(complete);
 		if (e.getBuffer().toLowerCase().contains("/mmocoreb reload ")) {
 		    e.setCompletions(new ArrayList<>());
-		} else if (e.getBuffer().toLowerCase().contains("/mmocoreb give ")) {
+		} else if (e.getBuffer().toLowerCase().contains("/mmocoreb give ")
+			|| e.getBuffer().toLowerCase().contains("/mmocoreb remove ")) {
 		    if (spaces == 2) {
 			e.setCompletions(Players);
 		    } else if (spaces == 3) {
@@ -333,10 +351,17 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 				    .get(NamespacedKey.minecraft("booster"), PersistentDataType.STRING);
 			    String[] split = s.split(",");
 			    getApi().getUserManager().getUser(e.getPlayer().getUniqueId()).data()
-				    .add(Node.builder("mmocoreboosters.xp." + split[0].toLowerCase() + "." + split[2])
-					    .expiry(Long.valueOf(split[1]), TimeUnit.SECONDS).build());
+				    .add(Node
+					    .builder("mmocoreboosters.xp." + split[0].toLowerCase() + "."
+						    + split[2])
+					    .expiry(Long.valueOf(split[1]), TimeUnit.MINUTES).build());
+			    api.getUserManager().saveUser(api.getUserManager()
+					.getUser(e.getPlayer().getUniqueId()));
 			    item.setAmount(item.getAmount() - 1);
 			    log(e.getPlayer(), msgs.get("boost-use"));
+			    if (debug)
+				System.out.println(e.getPlayer().getName() + "has activated a x"
+					+ split[2] + split[0] + " booster!");
 			}
 
     }
@@ -347,13 +372,15 @@ public class MMOCoreBoosters extends JavaPlugin implements Listener, CommandExec
 	int add = 0;
 	for (Booster b : getBoosters(e.getPlayer(), "all")) {
 	    if (e.getProfession() != null && e.getProfession().getId().equalsIgnoreCase(b.getType())) {
-		add += (exp * (Integer.valueOf(b.getPercent()) / 100));
+		add += (exp * b.getPercent());
 	    } else if (PlayerData.get(e.getPlayer().getUniqueId()).getProfess().getId().equalsIgnoreCase(b.getType())) {
-		add += (exp * (Integer.valueOf(b.getPercent()) / 100));
+		add += (exp * b.getPercent());
 	    }
 	}
+	if (debug)
+	    System.out.println(e.getPlayer().getName() + "'s boosters added +" + add + "xp from " + exp + "! Total = "
+		    + (exp + add));
 	e.setExperience(exp + add);
-
     }
 
     public static void log(CommandSender sender, String... s) {

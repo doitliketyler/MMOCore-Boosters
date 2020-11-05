@@ -38,16 +38,28 @@ public class BoosterExpansion extends PlaceholderExpansion {
 	if (player == null)
 	    return "0";
 	if (identifier.equals("total")) {
-	    return plugin.getBoosters(player, "all").size() + "";
+	    int total = 0;
+	    for(Booster b : plugin.getBoosters(player, "all")) {
+		total += b.getPercent();
+	    }
+	    return total + "";
 	} else if (identifier.equals("class")) {
-	    return plugin.getBoosters(player, "class") + "";
+	    int total = 0;
+	    for(Booster b : plugin.getBoosters(player, "class")) {
+		total += b.getPercent();
+	    }
+	    return total + "";
 	} else if (identifier.equals("profession")) {
-	    return plugin.getBoosters(player, "profess") + "";
+	    int total = 0;
+	    for(Booster b : plugin.getBoosters(player, "profess")) {
+		total += b.getPercent();
+	    }
+	    return total + "";
 	} else if (types.contains(identifier)) {
 	    int boost = 0;
 	    for (Booster b : plugin.getBoosters(player, "all")) {
 		if (b.getType().equalsIgnoreCase(identifier)) {
-		    boost++;
+		    boost += b.getPercent();
 		}
 	    }
 	    return boost + "";
