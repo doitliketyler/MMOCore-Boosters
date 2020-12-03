@@ -12,4 +12,4 @@ An add-on plugin for MMOCore that lets you give boosters for single player use a
 
 ## Permissions:
 - mmocoreboosters.admin
-- mmocoreboosters.xp.[class/profession].[percentage]
+- mmocoreboosters.xp.[class/profession].[amount]
